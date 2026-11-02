@@ -76,9 +76,13 @@ RUN chmod 755 /pre_startup.sh
 FROM builder_base_govapp AS python_libs_govapp
 
 USER oim
-RUN virtualenv /app/venv
+ENV VIRTUAL_ENV=/app/venv
+RUN python -m venv $VIRTUAL_ENV
 
 ENV PATH=/app/venv/bin:$PATH
+
+
+
 RUN whereis python
 COPY --chown=oim:oim requirements.txt ./
 COPY --chown=oim:oim src src
