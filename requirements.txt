@@ -5,7 +5,7 @@ gevent==25.4.2
 git+https://github.com/dbca-wa/webtemplate2.git#egg=webtemplate_dbca
 git+https://github.com/dbca-wa/wagov_utils.git#egg=wagov_utils
 git+https://github.com/dbca-wa/appmonitor_client.git#egg=appmonitor_client
-whitenoise==6.5.0
+whitenoise==6.12.0
 dj-database-url==2.0.0
 python-decouple==3.8
 pytz==2023.3
