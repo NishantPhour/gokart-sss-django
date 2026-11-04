@@ -1,7 +1,7 @@
 django==5.2.14
 dbca-utils==2.1.0
 gunicorn==26.2.0
-gevent==25.4.2
+gevent==26.9.0
 git+https://github.com/dbca-wa/webtemplate2.git#egg=webtemplate_dbca
 git+https://github.com/dbca-wa/wagov_utils.git#egg=wagov_utils
 git+https://github.com/dbca-wa/appmonitor_client.git#egg=appmonitor_client
