@@ -34,7 +34,7 @@ SECRET_KEY = decouple.config("SECRET_KEY")
 MAPBOX_ACCESS_TOKEN = decouple.config("MAPBOX_ACCESS_TOKEN", default="default")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = decouple.config("DEBUG", default=False, cast=bool)
+DEBUG = True
 
 ALLOWED_HOSTS=[""]
 if DEBUG is True:
@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'sss.apps.SssConfig',
     'rest_framework',
     'django_cron',
@@ -190,7 +191,7 @@ BFRS_URL=decouple.config("BFRS_URL", default="https://bfrs-uat.dbca.wa.gov.au")
 BFRS_PROXY_URL=decouple.config("BFRS_PROXY_URL", default="")
 HOTSPOT_URL=decouple.config("HOTSPOT_URL", default="https://hotspots.dbca.wa.gov.au/geoserver/hotspots/ows")
 AUTH2_BASIC_AUTH_USER=decouple.config("AUTH2_BASIC_AUTH_USER", default="admin")
-AUTH2_BASIC_AUTH_PASSWORD=decouple.config("AUTH2_BASIC_AUTH_PASSWORD", default="nopassword")
+AUTH2_BASIC_AUTH_PASSWORD="9d19fe3f76845cd5c34ef48830240bfe4ce85635968a720881d4a034c7363cf1"
 KMI_AUTH2_BASIC_AUTH_USER=decouple.config("KMI_AUTH2_BASIC_AUTH_USER", default="admin")
 KMI_AUTH2_BASIC_AUTH_PASSWORD=decouple.config("KMI_AUTH2_BASIC_AUTH_PASSWORD", default="nopassword")
 KB_AUTH2_BASIC_AUTH_USER=decouple.config("KB_AUTH2_BASIC_AUTH_USER", default="admin")
@@ -206,8 +207,7 @@ WEATHERFORECAST_PASSWORD=decouple.config("WEATHERFORECAST_PASSWORD", default="")
 CSW_SERVICE_URL=decouple.config("CSW_SERVICE_URL", default="/api/catalogue.json")
 SSS_SERVICE_URL=decouple.config("SSS_SERVICE_URL", default="https://sss-uat.dbca.wa.gov.au")
 RESOURCE_TRACKING_SERVICE_URL=decouple.config("RESOURCE_TRACKING_SERVICE_URL", default="https://resourcetracking.dbca.wa.gov.au")
-SRSS_URL=decouple.config("SRSS_URL", default="https://srss-ows-14.landgate.wa.gov.au")
-FIREWATCH_SERVICE=decouple.config("FIREWATCH_SERVICE", default="/geoproxy/firewatch/service/")
+FIREWATCH_SERVICE=decouple.config("FIREWATCH_SERVICE", default="/geoproxy/firewatch/wxs/westernpower-himawari8.php")
 FIREWATCH_HTTPS_VERIFY=decouple.config("FIREWATCH_HTTPS_VERIFY", default=False)
 BFRS_SERVICE_URL=decouple.config("BFRS_SERVICE_URL", default="https://bfrs-uat.dbca.wa.gov.au")
 DBCA_STATIC_URL=decouple.config("DBCA_STATIC_URL", default="https://static.dbca.wa.gov.au")
@@ -279,7 +279,7 @@ ENV_TYPE=decouple.config("ENV_TYPE", default="DEV")
 ENABLE_AUTH2_GROUPS=True
 FILE_UPLOAD_PERMISSIONS = None
 SESSION_ENGINE = 'django.contrib.sessions.backends.file'
-SESSION_FILE_PATH = decouple.config('SESSION_FILE_PATH', default='/app/session_store/')
+SESSION_FILE_PATH = decouple.config('SESSION_FILE_PATH', default=str(BASE_DIR / 'session_store'))
 
 PATH_TO_LOGS = os.path.join(BASE_DIR, 'logs')
 if not os.path.exists(PATH_TO_LOGS):
