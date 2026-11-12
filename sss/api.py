@@ -646,7 +646,14 @@ def himawari8(request, target):
     result = None
     getcaps = None
     FIREWATCH_HTTPS_VERIFY = True
-    firewatch_caps_url = conf.settings.SRSS_URL + "/mapproxy/firewatch/service?service=wms&request=getcapabilities"
+    try:
+        proxy = proxy_object("firewatch")
+    except Proxy.DoesNotExist:
+        raise Http404("No active Proxy entry found for firewatch")
+    firewatch_caps_url = proxy["proxy_url"].rstrip("/") + "/wxs/westernpower-himawari8.php?service=wms&request=getcapabilities"
+    auth = None
+    if proxy["basic_auth_enabled"]:
+        auth = HTTPBasicAuth(proxy["username"], proxy["password"])
 
     if cache.get("himware18") is not None:
         if cache.get(key) is not None:
@@ -654,7 +661,7 @@ def himawari8(request, target):
         else:
             getcaps = cache.get("himware18")
     else:
-        resp = requests.get(firewatch_caps_url, verify=FIREWATCH_HTTPS_VERIFY)
+        resp = requests.get(firewatch_caps_url, auth=auth, verify=FIREWATCH_HTTPS_VERIFY)
         resp.raise_for_status()
         getcaps = resp.content
         getcaps = getcaps.decode("utf-8")
