@@ -154,7 +154,7 @@ tour.addStep('welcome', {
       } else if (global.gokart.active.isHidden(global.gokart.tracking.trackingMapLayer)) {
           global.gokart.active.toggleHidden(global.gokart.tracking.trackingMapLayer)
       }
-      $('div[data-id="dpaw:resource_tracking_live"]').click()
+      $('div[data-id="' + env.resourceTrackingLiveLayer + '"]').click()
       Vue.nextTick(function () {
         $('#layer-config input.layer-opacity').val(30).change()
       })
@@ -166,7 +166,7 @@ tour.addStep('welcome', {
   when: {
     'before-show': function () {
       // vue doesn't pickup <a> clicks from jquery, use dom method
-      $('div[data-id="dpaw:resource_tracking_live"] a.remove-layer').get(0).click()
+      $('div[data-id="' + env.resourceTrackingLiveLayer + '"] a.remove-layer').get(0).click()
     }
   }
 }).addStep('export', {
