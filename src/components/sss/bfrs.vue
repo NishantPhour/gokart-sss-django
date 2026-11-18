@@ -1541,9 +1541,9 @@
                                             " ",
                                             "The sum of the burning areas in individual layers is " + Math.abs(feature_area["other_area"]).toFixed(2) + " greater than the total burning area " + feature_area["total_area"].toFixed(2) + ".",
                                             "The features from the following layers are overlaped.",
-                                            [["",1],[getLayerId("cddp:legislated_lands_and_waters"),11]],
-                                            [["",1],[getLayerId("cddp:dept_interest_lands_and_waters"),11]],
-                                            [["",1],[getLayerId("cddp:other_tenures"),11]],
+                                            [["",1],[vm.env.legislatedLandsAndWatersLayer,11]],
+                                            [["",1],[vm.env.deptInterestLandsAndWatersLayer,11]],
+                                            [["",1],[vm.env.otherTenuresLayer,11]],
                                             " ",
                                         ],
                                         defaultOption:false,
@@ -1641,9 +1641,9 @@
                                 messages:[
                                     "The sum of the burning areas in individual layers is " + Math.abs(feature_area["other_area"]).toFixed(2) + " greater than the total burning area " + feature_area["total_area"].toFixed(2) + ".",
                                     "The features from the following layers are overlaped.",
-                                    [["",1],[getLayerId("cddp:legislated_lands_and_waters"),11]],
-                                    [["",1],[getLayerId("cddp:dept_interest_lands_and_waters"),11]],
-                                    [["",1],[getLayerId("cddp:other_tenures"),11]],
+                                    [["",1],[vm.env.legislatedLandsAndWatersLayer,11]],
+                                    [["",1],[vm.env.deptInterestLandsAndWatersLayer,11]],
+                                    [["",1],[vm.env.otherTenuresLayer,11]],
                                     "Do you want to continue?"
                                 ],
                                 defaultOption:false,
@@ -1780,49 +1780,46 @@
                     var layers = [
                         {
                             id:"legislated_lands_and_waters",
-                            layerid:getLayerId("cddp:legislated_lands_and_waters"),
-                            cqlfilter:"category<>'State Forest'",
-                            kmiservice:vm.env.kmiService,
+                            layerid:vm.env.legislatedLandsAndWatersLayer,
+                            cqlfilter:"LEG_CATEGORY<>'State Forest'",
+                            kmiservice:getLayerUrl(vm.env.legislatedLandsAndWatersLayer, vm.env),
                             properties:{
-                                category:"category"
+                                category:"LEG_CATEGORY"
                             },
-                            primary_key:"ogc_fid"
+                            primary_key:"LEG_PIN"
                         },
                         {
                             id:"state_forest_plantation_distribution",
-                            layerid:getLayerId("cddp:state_forest_plantation_distribution"),
-                            kmiservice:vm.env.kmiService,
+                            layerid:vm.env.stateForestPlantationDistributionLayer,
+                            kmiservice:getLayerUrl(vm.env.stateForestPlantationDistributionLayer, vm.env),
                             properties:{
-                                category:"fbr_fire_r"
+                                category:"FBR_FIRE_REPORT_CLASSIFICATION"
                             },
-                            primary_key:"ogc_fid"
                         },
                         {
                             id:"dept_interest_lands_and_waters",
-                            layerid:getLayerId("cddp:dept_interest_lands_and_waters"),
-                            kmiservice:vm.env.kmiService,
+                            layerid:vm.env.deptInterestLandsAndWatersLayer,
+                            kmiservice:getLayerUrl(vm.env.deptInterestLandsAndWatersLayer, vm.env),
                             properties:{
-                                category:"category"
+                                category:"LOI_CATEGORY"
                             },
-                            primary_key:"ogc_fid"
+                            primary_key:"LOI_PIN"
                         },
                         {
                             id:"other_tenures",
-                            layerid:getLayerId("cddp:other_tenures"),
-                            kmiservice:vm.env.kmiService,
+                            layerid:vm.env.otherTenuresLayer,
+                            kmiservice:getLayerUrl(vm.env.otherTenuresLayer, vm.env),
                             properties:{
-                                category:"brc_fms_le"
+                                category:"BRC_FMS_Legend"
                             },
-                            primary_key:"ogc_fid"
                         },
                         {
                             id:"sa_nt_burntarea",
-                            layerid:getLayerId("cddp:sa_nt_state_polygons_burntarea"),
-                            kmiservice:vm.env.kmiService,
+                            layerid:vm.env.saNtStatePolygonsBurntAreaLayer,
+                            kmiservice:getLayerUrl(vm.env.saNtStatePolygonsBurntAreaLayer, vm.env),
                             properties:{
-                                category:"name"
+                                category:"Name"
                             },
-                            primary_key:"ogc_fid"
                         }
                     ]
                     $.ajax({
@@ -1876,44 +1873,81 @@
                 if (tenure_origin_point_task) {
                     tenure_origin_point_task.setStatus(utils.RUNNING)
                     tenure_layers = [{
-                        id:"cddp:state_forest_plantation_distribution",
+                        id:vm.env.stateForestPlantationDistributionLayer,
                         geom_field:"wkb_geometry",
                         properties:{
                             id:"ogc_fid",
                             name:"fbr_fire_r",
                             category:"fbr_fire_r"
                         },
+                        kb:{
+                            geom_field:"SHAPE",
+                            properties:{
+                                name:"FBR_FIRE_REPORT_CLASSIFICATION",
+                                category:"FBR_FIRE_REPORT_CLASSIFICATION"
+                            }
+                        },
                     },{
-                        id:"cddp:legislated_lands_and_waters",
+                        id:vm.env.legislatedLandsAndWatersLayer,
                         geom_field:"wkb_geometry",
                         properties:{
                             id:"ogc_fid",
                             name:"name",
                             category:"category"
                         },
+                        kb:{
+                            geom_field:"SHAPE",
+                            properties:{
+                                id:"LEG_PIN",
+                                name:"LEG_NAME",
+                                category:"LEG_CATEGORY"
+                            }
+                        },
                     },{
-                        id:"cddp:dept_interest_lands_and_waters",
+                        id:vm.env.deptInterestLandsAndWatersLayer,
                         geom_field:"wkb_geometry",
                         properties:{
                             id:"ogc_fid",
                             name:"name",
                             category:"category"
                         },
+                        kb:{
+                            geom_field:"SHAPE",
+                            properties:{
+                                id:"LOI_PIN",
+                                name:"LOI_CATEGORY",
+                                category:"LOI_CATEGORY"
+                            }
+                        },
                     },{
-                        id:"cddp:other_tenures",
+                        id:vm.env.otherTenuresLayer,
                         geom_field:"wkb_geometry",
                         properties:{
                             id:"ogc_fid",
                             name:"brc_fms_le",
                             category:"brc_fms_le"
                         },
+                        kb:{
+                            geom_field:"SHAPE",
+                            properties:{
+                                name:"BRC_FMS_Legend",
+                                category:"BRC_FMS_Legend"
+                            }
+                        },
                     },{
-                        id:"cddp:sa_nt_state_polygons_burntarea",
+                        id:vm.env.saNtStatePolygonsBurntAreaLayer,
                         geom_field:"wkb_geometry",
                         properties:{
                             id:"ogc_fid",
                             name:"name",
                             category:"name"
+                        },
+                        kb:{
+                            geom_field:"SHAPE",
+                            properties:{
+                                name:"Name",
+                                category:"Name"
+                            }
                         },
                     }]
                     vm.map.getFeature(tenure_layers,originPoint,function(feature){
@@ -2023,7 +2057,9 @@
                         coordinates:originPoint
                     }
                 },3,"kilometers").geometry.coordinates[0]
-                var url = vm.env.kmiService + "/wfs?service=wfs&version=2.0&request=GetFeature&typeNames=" + getLayerId("cddp:plantation_annual_report") + "&outputFormat=json&cql_filter=INTERSECTS(wkb_geometry,POLYGON((" + point_buffer.map(function(p){return p[1] + " " + p[0]}).join("%2C") + ")))"
+                var plantationLayerId = vm.env.plantationAnnualReportLayer
+                var isKbPlantation = getLayerUrl(plantationLayerId, vm.env) === vm.env.kbService
+                var url = getLayerUrl(plantationLayerId, vm.env) + "/wfs?service=wfs&version=2.0&request=GetFeature&typeNames=" + plantationLayerId + "&outputFormat=json&cql_filter=INTERSECTS(" + (isKbPlantation ? "SHAPE" : "wkb_geometry") + ",POLYGON((" + point_buffer.map(function(p){return p[1] + " " + p[0]}).join("%2C") + ")))"
                 $.ajax({
                     url:url,
                     dataType:"json",
@@ -2031,6 +2067,15 @@
                         if (response.totalFeatures > 0) {
                             //only send the properties to bfrs
                             spatialData["plantations"] = response.features.map(function(o){
+                                if (isKbPlantation) {
+                                    return {
+                                        "ogc_fid":null,
+                                        "species":o.properties["Species"],
+                                        "sp_type":o.properties["Map_Symbol"],
+                                        "area_ha":o.properties["AreaHa"],
+                                        "classifica":o.properties["Classifica"]
+                                    }
+                                }
                                 return {
                                     "ogc_fid":o.properties["ogc_fid"],
                                     "species":o.properties["species"],

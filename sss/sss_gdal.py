@@ -10,9 +10,11 @@ import json
 import traceback
 from jinja2 import Template
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
 from sss import s3
 from sss import common
+from sss import kmi
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files import File
@@ -543,12 +545,18 @@ def loadDatasource(session_cookie,workdir,loadedDatasources,options, request):
             if not os.path.exists(os.path.dirname(datasource)):
                 os.makedirs(os.path.dirname(datasource))
             url = "{}&outputFormat=application%2Fjson&srsName=EPSG:4326".format(options["url"])
-            auth_request = requests.auth.HTTPBasicAuth(settings.KMI_AUTH2_BASIC_AUTH_USER,settings.KMI_AUTH2_BASIC_AUTH_PASSWORD)
+            parsed_url = urlsplit(url)
+            query = {key.lower(): value for key, value in parse_qs(parsed_url.query).items()}
+            layerid = (query.get("typenames") or query.get("typename") or [""])[0].split(",")[0]
+            if kmi.is_kb_layer(layerid):
+                url = kmi.get_kmiserver(layerid=layerid) + "/geoserver/wfs?" + parsed_url.query
+            auth_request = kmi.get_auth(layerid)
             r = requests.get(url,
-                verify=False,
+                verify=kmi.is_kb_layer(layerid),
                 #cookies=session_cookie
                 auth=auth_request
             )
+            r.raise_for_status()
             with open(datasource,"wb") as f:
                 for chunk in r.iter_content(chunk_size=1024):
                     f.write(chunk)

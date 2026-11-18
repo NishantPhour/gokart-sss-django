@@ -26,12 +26,29 @@ def layermetadatakey(layerid):
 def layerdefinitionkey(layerid):
     return "layerdefinition_{}".format(layerid)
 
-def get_kmiserver(kmiserver=None):
-    return settings.KMI_API_URL
-    # kmiserver = kmiserver or settings.get_kmiserver()
-    # if  kmiserver.endswith("/"):
-    #     kmiserver = kmiserver[:-1]
-    # return kmiserver
+KB_WORKSPACE_PREFIX = "kaartdijin-boodja"
+
+def is_kb_layer(layerid):
+    return bool(layerid) and layerid.strip().startswith(KB_WORKSPACE_PREFIX)
+
+def _normalise_server(url):
+    # Callers append "/geoserver/...", so strip any trailing "/geoserver" from the configured base url
+    url = (url or "").rstrip("/")
+    if url.endswith("/geoserver"):
+        url = url[:-len("/geoserver")]
+    return url
+
+def get_kmiserver(kmiserver=None, layerid=None):
+    """Return the geoserver base url (without '/geoserver') hosting the layer.
+    Kaartdijin Boodja layers are served by KB, everything else by KMI."""
+    if is_kb_layer(layerid):
+        return _normalise_server(settings.KB_API_URL)
+    return _normalise_server(settings.KMI_API_URL)
+
+def get_auth(layerid=None):
+    if is_kb_layer(layerid):
+        return requests.auth.HTTPBasicAuth(settings.KB_AUTH2_BASIC_AUTH_USER,settings.KB_AUTH2_BASIC_AUTH_PASSWORD)
+    return requests.auth.HTTPBasicAuth(settings.KMI_AUTH2_BASIC_AUTH_USER,settings.KMI_AUTH2_BASIC_AUTH_PASSWORD)
 
 def get_layermetadata(layerids,kmiserver=None,results={}):
     multiple_layers = True
@@ -75,18 +92,28 @@ def get_layermetadata(layerids,kmiserver=None,results={}):
 
     if layers:
         session_cookie = settings.SESSION_COOKIE_NAME
-        kmiserver = get_kmiserver(kmiserver)
         #find the layer's metadata 
         url = None
-        for layer_ws,layers in layers.items():
-            if layer_ws:
+        requests_by_ws = []
+        for layer_ws,ws_layers in layers.items():
+            if is_kb_layer(layer_ws):
+                # KB workspace capabilities can contain malformed layers, so request each layer's capabilities
+                requests_by_ws.extend((layer_ws,[layer],layer) for layer in ws_layers)
+            else:
+                requests_by_ws.append((layer_ws,ws_layers,None))
+
+        for layer_ws,layers,single_layer in requests_by_ws:
+            kmiserver = get_kmiserver(kmiserver,layerid=layer_ws)
+            if single_layer:
+                url = "{}/geoserver/{}/{}/wms?service=wms&version=1.1.1&request=GetCapabilities".format(kmiserver,layer_ws,single_layer)
+            elif layer_ws:
                 url = "{}/geoserver/{}/wms?service=wms&version=1.1.1&request=GetCapabilities".format(kmiserver,layer_ws)
             else:
                 url = "{}/geoserver/wms?service=wms&version=1.1.1&request=GetCapabilities".format(kmiserver)
-            auth_request = requests.auth.HTTPBasicAuth(settings.KMI_AUTH2_BASIC_AUTH_USER,settings.KMI_AUTH2_BASIC_AUTH_PASSWORD)
+            auth_request = get_auth(layer_ws)
             res = requests.get(
                 url,
-                verify=False,
+                verify=is_kb_layer(layer_ws),
                 auth=auth_request,
                 # cookies=session_cookie
             )
@@ -209,20 +236,20 @@ def get_layerdefinition(layerids,kmiserver=None,results={}):
             layers[layer_ws].append(layerid)
 
     if layers:
-        kmiserver = get_kmiserver(kmiserver)
         session_cookie = settings.SESSION_COOKIE_NAME
 
         url = None
         for layer_ws,layers in layers.items():
+            kmiserver = get_kmiserver(kmiserver,layerid=layer_ws)
             if layer_ws:
                 url = "{}/geoserver/{}/wfs?request=DescribeFeatureType&version=2.0.0&service=WFS&outputFormat=application%2Fjson&typeName={}".format(kmiserver,layer_ws,",".join(layers))
             else:
                 url = "{}/geoserver/wfs?request=DescribeFeatureType&version=2.0.0&service=WFS&outputFormat=application%2Fjson&typeName={}".format(kmiserver,",".join(layers))
 
-            auth_request = requests.auth.HTTPBasicAuth(settings.KMI_AUTH2_BASIC_AUTH_USER,settings.KMI_AUTH2_BASIC_AUTH_PASSWORD)
+            auth_request = get_auth(layer_ws)
             res = requests.get(
                 url,
-                verify=False,
+                verify=is_kb_layer(layer_ws),
                 auth=auth_request,
                 # cookies=session_cookie
             )
@@ -270,10 +297,10 @@ def get_layerdefinition(layerids,kmiserver=None,results={}):
                             url = "{}/geoserver/{}/ows?service=WFS&version=2.0.0&request=GetFeature&typeName={}&count=1&outputFormat=application%2Fjson".format(kmiserver,layer_ws,layerid)
                         else:
                             url = "{}/geoserver/ows?service=WFS&version=2.0.0&request=GetFeature&typeName={}&count=1&outputFormat=application%2Fjson".format(kmiserver,layerid)
-                        auth_request = requests.auth.HTTPBasicAuth(settings.KMI_AUTH2_BASIC_AUTH_USER,settings.KMI_AUTH2_BASIC_AUTH_PASSWORD)
+                        auth_request = get_auth(layer_ws)
                         res = requests.get(
                             url,
-                            verify=False,
+                            verify=is_kb_layer(layer_ws),
                             #cookies=session_cookie
                             auth=auth_request
                         )

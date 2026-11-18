@@ -1297,12 +1297,13 @@
         if (!options || !options.id || !options.id.includes("resource_tracking_history") || options.cql_filter !== false) {
           if (options.mapLayer) return options.mapLayer
           var vm = this
+          var layerId = getLayerId(options.identifier || options.id)
           var url = this.env.kmiService + "/wfs"
           if (this.env.bfrsProxyUrl && (this.env.envType.toLowerCase() === "uat" || this.env.envType.toLowerCase() === "dev") && options.id.includes("bushfirelist_latest")){
               url = "/api/bfrs-proxy/"
             }
-          else if (options.id.startsWith("kaartdijin-boodja-private")){
-            url = this.env.kbService + "/wfs"
+          else if (isKbLayer(layerId)){
+            url = getLayerUrl(layerId, this.env) + "/wfs"
           }
           var withCredentialsSetting = true
           if (options.id.startsWith('hotspots:')) {
@@ -1317,7 +1318,7 @@
             request: 'GetFeature',
             outputFormat: 'application/json',
             srsname: 'EPSG:4326',
-            typename: getLayerId(options.id)
+            typename: layerId
             //cql_filter: options.cqlFilter
           }, options.params || {})
 
@@ -1616,16 +1617,12 @@
         if (options.base) {
           options.format = 'image/jpeg'
         }
-        if(!options.identifier){
-          layer_id = options.id
-        }
-        else{
-          layer_id = options.identifier
-        }
+        var layer_id = getLayerId(options.identifier || options.id)
+        var layerUrl = isKbLayer(layer_id) ? getLayerUrl(layer_id, this.env) : options.map_server_url
         var layer = $.extend({
           opacity: 1,
           //name: 'Mapbox Outdoors',
-          //id: 'dpaw:mapbox_outdoors',
+          //id: this.env.overviewLayer,
           name: options.title,
           id: layer_id,
           format: 'image/png',
@@ -1633,7 +1630,7 @@
           tileSize: 1024,
           //style: '',
           projection: 'EPSG:4326',
-          wmts_url: options.map_server_url+ "/gwc/service/wmts"
+          wmts_url: layerUrl + "/gwc/service/wmts"
         }, options)
         // // wmts_url: this.env.kmiService+ "/gwc/service/wmts"
         // create a tile grid using the stock KMI resolutions
@@ -1727,7 +1724,7 @@
         var wmsVersion = options.service_type_version || '1.1.1'
 
         var tileSource = new ol.source.TileWMS({
-          url: options.map_server_url + "/gwc/service/wms",
+          url: layerUrl + "/gwc/service/wms",
           params: { 'FORMAT': 'image/png', 
                     'VERSION': wmsVersion,
                     tiled: true,
@@ -1865,23 +1862,21 @@
         if (options.base) {
           options.format = 'image/jpeg'
         }
-        if(!options.identifier){
-          layer_id = options.id
-        }
-        else{
-          layer_id = options.identifier
-        }
+        var layer_id = getLayerId(options.identifier || options.id)
         const url = getLayerUrl(layer_id, this.env);
         var layer = $.extend({
           opacity: 1,
           name: 'Mapbox Outdoors',
-          id: 'dpaw:mapbox_outdoors',
+          id: this.env.overviewLayer,
           format: 'image/png',
           tileSize: 1024,
           style: '',
           projection: 'EPSG:4326',
           wmts_url: url + "/gwc/service/wmts"
         }, options)
+        if (isKbLayer(layer_id)) {
+          layer.wmts_url = url + "/gwc/service/wmts"
+        }
         // // wmts_url: this.env.kmiService+ "/gwc/service/wmts"
         // create a tile grid using the stock KMI resolutions
 
@@ -1962,7 +1957,7 @@
 
         var tileSource = new ol.source.WMTS({
           url: layer.wmts_url,
-          layer: getLayerId(layer.id),
+          layer: getLayerId(layer.identifier || layer.id),
           matrixSet: matrixSet.name,
           format: layer.format,
           style: layer.style,
@@ -2099,16 +2094,21 @@
         if (options.base) {
           options.format = 'image/jpeg'
         }
+        var layerId = getLayerId(options.identifier || options.id)
+        var layerUrl = isKbLayer(layerId) ? getLayerUrl(layerId, this.env) : options.map_server_url
         var layer = $.extend({
           opacity: 1,
           name: 'Mapbox Outdoors',
-          id: 'dpaw:mapbox_outdoors',
+          id: this.env.overviewLayer,
           format: 'image/png',
           tileSize: 1024,
           style: '',
           projection: 'EPSG:4326',
-          wmts_url: options.map_server_url+ "/gwc/service/wmts"
+          wmts_url: layerUrl + "/gwc/service/wmts"
         }, options)
+        if (isKbLayer(layerId)) {
+          layer.wmts_url = layerUrl + "/gwc/service/wmts"
+        }
         // wmts_url: this.env.kmiService+ "/gwc/service/wmts"
         // create a tile grid using the stock KMI resolutions
         var matrixSet = this.matrixSets[layer.projection][layer.tileSize]
@@ -2132,7 +2132,7 @@
         // create a tile source
         var tileSource = new ol.source.WMTS({
           url: layer.wmts_url,
-          layer: getLayerId(layer.id),
+          layer: getLayerId(layer.identifier || layer.id),
           matrixSet: matrixSet.name,
           format: layer.format,
           style: layer.style,
@@ -2256,10 +2256,14 @@
         // console.log(options);
         if (options.mapLayer) return options.mapLayer
         var vm = this
+        var url
         if (options.base) {
           options.format = 'image/jpeg'
         }
-        if (options.map_server_url){
+        if (isKbLayer(options.identifier || options.id)) {
+          url = getLayerUrl(options.identifier || options.id, this.env)
+        }
+        else if (options.map_server_url){
           url = options.map_server_url
         }
         else{
@@ -2269,20 +2273,23 @@
         var layer = $.extend({
           opacity: 1,
           name: 'Mapbox Outdoors',
-          id: 'dpaw:mapbox_outdoors',
+          id: this.env.overviewLayer,
           format: 'image/png',
           tileSize: 1024,
           style: '',
           projection: 'EPSG:4326',
           wms_url: url + "/wms"
         }, options)
+        if (isKbLayer(options.identifier || options.id)) {
+          layer.wms_url = url + "/wms"
+        }
         // create a tile source
         var imgSource = new ol.source.ImageWMS({
           url: layer.wms_url,
           crossOrigin :'use-credentials',
           serverType:"geoserver",
           params:{
-            LAYERS:getLayerId(layer.id),
+            LAYERS:getLayerId(layer.identifier || layer.id),
             styles:layer.style
           },
           projection: layer.projection,
@@ -2568,7 +2575,7 @@
 				vm.$root.catalogue.catalogue.push(fixedLayer)
 			}
         })
-        vm._overviewLayer = vm._overviewLayer || $.extend({}, vm.$root.catalogue.getLayer(vm.env.overviewLayer || "dpaw:mapbox_outdoors"))
+        vm._overviewLayer = vm._overviewLayer || $.extend({}, vm.$root.catalogue.getLayer(vm.env.overviewLayer))
 
         //ignore the active layers which does not exist in the catalogue layers.
         activeLayers = activeLayers.filter(function(activeLayer){
@@ -2788,9 +2795,11 @@
           }
           var _getFeature = function(index) {
             const layer_id = getLayerId(layers[index]["id"]);
-            url = getLayerUrl(layer_id, vm.env);
+            var url = getLayerUrl(layer_id, vm.env);
+            // KB layers use different geometry/attribute names; use the layer's 'kb' overrides when routed to KB
+            const layer = (url === vm.env.kbService && layers[index]["kb"]) ? Object.assign({}, layers[index], layers[index]["kb"]) : layers[index];
             $.ajax({
-                url:url + "/wfs?service=wfs&version=2.0&request=GetFeature&typeNames=" + getLayerId(layers[index]["id"]) + "&outputFormat=json&cql_filter=CONTAINS(" + (layers[index]["geom_field"] || "wkb_geometry") + ",POINT(" + coordinate[1]  + " " + coordinate[0] + "))",
+                url:url + "/wfs?service=wfs&version=2.0&request=GetFeature&typeNames=" + layer_id + "&outputFormat=json&cql_filter=CONTAINS(" + (layer["geom_field"] || "wkb_geometry") + ",POINT(" + coordinate[1]  + " " + coordinate[0] + "))",
                 dataType:"json",
                 success: function (response, stat, xhr) {
                    if (response.totalFeatures === 0) {
@@ -2805,9 +2814,9 @@
                        }
                     } else {
                         var feature = null
-                        if (layers[index]["properties"]) {
+                        if (layer["properties"]) {
                             feature = {}
-                            $.each(layers[index]["properties"],function(field,column){
+                            $.each(layer["properties"],function(field,column){
                                 feature[field] = response.features[0]["properties"][column]
                             })
                         } else {
@@ -2855,20 +2864,20 @@
                           layers:[
                               {
                                   id:"fd_grid_points",
-                                  layerid:getLayerId("cddp:fd_grid_points"),
-                                  kmiservice:vm.env.kmiService,
+                                  layerid:vm.env.fdGridPointsLayer,
+                                  kmiservice:getLayerUrl(vm.env.fdGridPointsLayer, vm.env),
                                   buffer:120,
                                   properties:{
-                                      grid:"fdgrid",
+                                      grid:"FDGRID",
                                   },
                               },
                               {
                                   id:"pilbara_grid_1km",
-                                  layerid:getLayerId("cddp:pilbara_grid_1km"),
+                                  layerid:vm.env.pilbaraGrid1kmLayer,
                                   buffer:800,
-                                  kmiservice:vm.env.kmiService,
+                                  kmiservice:getLayerUrl(vm.env.pilbaraGrid1kmLayer, vm.env),
                                   properties:{
-                                      grid:"id",
+                                      grid:"ID",
                                   },
                               },
                           ],
@@ -2976,15 +2985,10 @@
                 return
             }
             var buffered = turf.bbox(turf.buffer(turf.point(coordinate),buffers[index],"kilometers"))
-            var url = null
-            if (getLayerId("cddp:townsite_points").startsWith("kaartdijin-boodja-private")){
-                  url = vm.env.kbService 
-              }
-            else {
-                url = vm.env.kmiService
-            }
+            var townsiteLayerId = vm.env.townsitePointsLayer
+            var url = getLayerUrl(townsiteLayerId, vm.env)
             $.ajax({
-                url:url + "/wfs?service=wfs&version=2.0&request=GetFeature&typeNames=" + getLayerId("cddp:townsite_points") + "&outputFormat=json&bbox=" + buffered[1] + "," + buffered[0] + "," + buffered[3] + "," + buffered[2],
+                url:url + "/wfs?service=wfs&version=2.0&request=GetFeature&typeNames=" + townsiteLayerId + "&outputFormat=json&bbox=" + buffered[1] + "," + buffered[0] + "," + buffered[3] + "," + buffered[2],
                 dataType:"json",
                 success: function (response, stat, xhr) {
                     processPositionResponse(response, index)
