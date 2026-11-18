@@ -4,6 +4,7 @@ import hashlib
 import struct
 import os
 import json
+import threading
 
 
 def generate_hash_key(input_string):
@@ -27,11 +28,15 @@ def generate_hash_key(input_string):
 
     return hash_key
 
-def write_meta_data(filename, json_data):
+def _atomic_write(filename, data, mode):
+    # Write to a unique temp file then rename, so concurrent readers never see a partially written file
+    tmp_filename = "{}.{}.{}.tmp".format(filename, os.getpid(), threading.get_ident())
+    with open(tmp_filename, mode) as f:
+        f.write(data)
+    os.replace(tmp_filename, filename)
 
-    # Write JSON to a file
-    with open(filename, "w") as file:
-        json.dump(json_data, file, indent=4)
+def write_meta_data(filename, json_data):
+    _atomic_write(filename, json.dumps(json_data, indent=4), "w")
     # print("JSON file has been created successfully!")
 
 def write_data_to_file(filename, data):
@@ -47,24 +52,8 @@ def write_data_to_binary_file(filename, binary_data):
     """
     print(f"--- Starting to write binary data to '{filename}' ---")
 
-    # 1. Open the file in binary write mode ('wb')
-    # The 'b' is crucial for telling Python to treat the file contents as raw bytes.
     try:
-        with open(filename, 'wb') as f:
-            # --- Example 1: Writing a simple bytes object (from a string) ---
-            # All data written in 'wb' mode MUST be a bytes object.
-            # data = "Hello Binary World!"
-            # print(f"Writing string: '{data}'")
-            f.write(binary_data)
-            
-            # Write a newline byte (optional, but helps separate data)
-            # f.write(b'\n')
-
-            # --- Example 2: Writing raw numerical data using the 'struct' module ---
-            # The struct module is used to pack Python values into byte strings 
-            # according to specified format codes (e.g., '>i' means Big-Endian 4-byte integer).
-
-            
+        _atomic_write(filename, binary_data, 'wb')
         file_size = os.path.getsize(filename)
         # print(f"--- Successfully wrote to file. Total file size: {file_size} bytes. ---")
 

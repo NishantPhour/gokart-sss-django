@@ -27,8 +27,11 @@ global.tour = tour
 global.getLayerId = function(id) {
     return (env && env.layerMapping && env.layerMapping[id]) || id
 }
+global.isKbLayer = function(id) {
+    return typeof id === "string" && id.startsWith("kaartdijin-boodja")
+}
 global.getLayerUrl = function(layer_id, env) {
-  if (layer_id.startsWith("kaartdijin-boodja")) {
+  if (isKbLayer(layer_id) || layer_id.startsWith("dpaw:bushfire")) {
       return env.kbService;
   } else if (layer_id.startsWith("hotspots:")) {
       return env.hotspotsUrl + "/wfs";
@@ -557,7 +560,7 @@ if (result) {
           }, {
             type: 'TileLayer',
             name: 'State Map Base',
-            id: 'cddp:state_map_base',
+            id: env.stateMapLayer,
             //base: true
           }, {
             type: 'TileLayer',

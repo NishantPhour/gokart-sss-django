@@ -122,15 +122,16 @@
       },
       queryFD: function(fdStr, victory, failure) {
         var vm = this
+        var layerId = vm.env.fdGridPointsMappingLayer
         $.ajax({
-          url: vm.env.kmiService + '/wfs?' + $.param({
+          url: getLayerUrl(layerId, vm.env) + '/wfs?' + $.param({
             version: '1.1.0',
             service: 'WFS',
             request: 'GetFeature',
             outputFormat: 'application/json',
             srsname: 'EPSG:4326',
-            typename: 'cddp:fd_grid_points_mapping',
-            cql_filter: '(fdgrid = \''+fdStr+'\')'
+            typename: layerId,
+            cql_filter: '(FDGRID = \''+fdStr+'\')'
           }),
           dataType: 'json',
           xhrFields: {
@@ -147,14 +148,15 @@
       },
       queryPIL: function(pilStr, victory, failure) {
         var vm = this
+        var layerId = vm.env.pilbaraGrid10kmMappingLayer
         $.ajax({
-          url: vm.env.kmiService + '/wfs?' + $.param({
+          url: getLayerUrl(layerId, vm.env) + '/wfs?' + $.param({
             version: '1.1.0',
             service: 'WFS',
             request: 'GetFeature',
             outputFormat: 'application/json',
             srsname: 'EPSG:4326',
-            typename: 'cddp:pilbara_grid_10km_mapping',
+            typename: layerId,
             cql_filter: '(grid = \''+pilStr+'\')'
           }),
           dataType: 'json',

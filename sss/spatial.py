@@ -311,10 +311,10 @@ def extractPoints(geom):
     else:
         return None
 
-def retrieveFeatures(url,session_cookies):
-        auth_request = requests.auth.HTTPBasicAuth(settings.KMI_AUTH2_BASIC_AUTH_USER,settings.KMI_AUTH2_BASIC_AUTH_PASSWORD)
+def retrieveFeatures(url,session_cookies,layerid):
+        auth_request = kmi.get_auth(layerid)
         res = requests.get(url,
-                           verify=False,
+                           verify=kmi.is_kb_layer(layerid),
                            auth=auth_request,
                            #cookies=session_cookies
                             )   
@@ -325,18 +325,19 @@ def checkOverlap(session_cookies,feature,options,logfile):
     # needs gdal 1.10+
     layers = options["layers"]
     geometry = extractPolygons(getShapelyGeometry(feature))
-    kmiserver = kmi.get_kmiserver()
     if not geometry :
         return
 
     features = {}
     #retrieve all related features from layers
     for layer in layers:
+        kmiserver = kmi.get_kmiserver(layerid=layer["layerid"])
+        layer["kmiservice"] = kmiserver
         if layer.get('cqlfilter'):
             layer_url="{}/geoserver/wfs?service=wfs&version=2.0&request=GetFeature&typeNames={}&outputFormat=json&cql_filter=BBOX({},{},{},{},{}) AND {}".format(kmiserver,layer["layerid"],layerdefinition(layer)["geometry_property"]["name"],geometry.bounds[1],geometry.bounds[0],geometry.bounds[3],geometry.bounds[2],layer['cqlfilter'])
         else:
             layer_url="{}/geoserver/wfs?service=wfs&version=2.0&request=GetFeature&typeNames={}&outputFormat=json&bbox={},{},{},{}".format(kmiserver,layer["layerid"],geometry.bounds[1],geometry.bounds[0],geometry.bounds[3],geometry.bounds[2])
-        features[layer["id"]] = retrieveFeatures(layer_url, session_cookies)["features"]
+        features[layer["id"]] = retrieveFeatures(layer_url, session_cookies, layer["layerid"])["features"]
 
         for layer_feature in features[layer["id"]]:
             layer_geometry = getShapelyGeometry(layer_feature)
@@ -537,18 +538,15 @@ def _calculateArea(feature,kmiserver,session_cookies,options,run_in_other_proces
         target_projection = selected_crs_settings.crs
         transformed_geometry = transform(geometry, target_proj=target_projection)
 
-    kmi_server = kmi.get_kmiserver()
-
-
     try:
         # calculate the area of the geometry directly on the wgs84 sphere
         area_data["total_area"] = getGeometryArea(transformed_geometry, unit=unit)
-    except:
+    except Exception as error:
         traceback.print_exc()
         if "invalid" in status:
             status["failed"] = "Calculate total area failed.{}".format("\r\n".join(status["invalid"]))
         else:
-            status["failed"] = "Calculate total area failed.{}".format(traceback.format_exception_only(sys.exc_type,sys.exc_value))
+            status["failed"] = "Calculate total area failed.{}".format(traceback.format_exception_only(type(error),error))
 
         return result
 
@@ -568,13 +566,13 @@ def _calculateArea(feature,kmiserver,session_cookies,options,run_in_other_proces
             layer["layerid"] = layer["id"]
         elif "id" not in layer:
             layer["id"] = layer["layerid"]
-        if not layer.get("kmiservice"):
-            layer["kmiservice"] = kmi_server
+        layer["kmiservice"] = kmi.get_kmiserver(layerid=layer["layerid"])
     
     area_data["layers"] = {}
     areas_map = {} if merge_result else None
     for layer in layers:
         try:
+            kmi_server = layer["kmiservice"]
             layer_area_data = []
             total_layer_area = 0
             area_data["layers"][layer["id"]] = {"areas":layer_area_data}
@@ -584,7 +582,7 @@ def _calculateArea(feature,kmiserver,session_cookies,options,run_in_other_proces
             else:
                 layer_url="{}/geoserver/wfs?service=wfs&version=2.0&request=GetFeature&typeNames={}&outputFormat=json&bbox={},{},{},{}".format(kmi_server,layer["layerid"],geometry.bounds[1],geometry.bounds[0],geometry.bounds[3],geometry.bounds[2])
 
-            layer_features = retrieveFeatures(layer_url,session_cookies)["features"]
+            layer_features = retrieveFeatures(layer_url,session_cookies,layer["layerid"])["features"]
 
             if settings.EXPORT_CALCULATE_AREA_FILES_4_DEBUG:
                 #export intersected areas for debug
@@ -734,7 +732,6 @@ def getFeature(feature,kmiserver,session_cookies,options):
     """
     # needs gdal 1.10+
     layers = options["layers"]
-    kmiserver = kmi.get_kmiserver()
     #check whether layers is not empty
     if not layers:
         raise Exception("Layers must not be empty.")
@@ -752,8 +749,7 @@ def getFeature(feature,kmiserver,session_cookies,options):
             layer["layerid"] = layer["id"]
         elif "id" not in layer:
             layer["id"] = layer["layerid"]
-        if not layer.get("kmiservice"):
-            layer["kmiservice"] = kmiserver
+        layer["kmiservice"] = kmi.get_kmiserver(layerid=layer["layerid"])
 
     get_feature_data = {"id":None,"layer":None,"failed":None}
 
@@ -762,6 +758,7 @@ def getFeature(feature,kmiserver,session_cookies,options):
         for layer in layers:
             if not layer or not layer.get("kmiservice") or not layer["layerid"]:
                 continue
+            kmiserver = layer["kmiservice"]
 
             if layer.get('check_bbox'):
                 #check whether feature is in layer's bbox
@@ -788,7 +785,7 @@ def getFeature(feature,kmiserver,session_cookies,options):
                         #polygon or line
                         layer_features = retrieveFeatures(
                             "{}/geoserver/wfs?service=wfs&version=2.0&request=GetFeature&typeNames={}&outputFormat=json&cql_filter=CONTAINS({},POINT({} {}))".format(kmiserver,layer["layerid"],layerdefinition(layer)["geometry_property"]["name"],geometry.y,geometry.x),
-                            session_cookies
+                            session_cookies, layer["layerid"]
                         )["features"]
 
                 else:
@@ -803,12 +800,12 @@ def getFeature(feature,kmiserver,session_cookies,options):
                     buff_polygon = Polygon(buffer(geometry.x,geometry.y,layer["buffer"]))
                     layer_features = retrieveFeatures(
                         "{}/geoserver/wfs?service=wfs&version=2.0&request=GetFeature&typeNames={}&outputFormat=json&cql_filter=INTERSECTS({},POLYGON(({})))".format(kmiserver,layer["layerid"],layerdefinition(layer)["geometry_property"]["name"],"%2C".join(["{} {}".format(coord[0],coord[1]) for coord in list(buff_polygon.exterior.coords)])),
-                        session_cookies
+                        session_cookies, layer["layerid"]
                     )["features"]
                 elif isinstance(geometry,Polygon):
                     layer_features = retrieveFeatures(
                         "{}/geoserver/wfs?service=wfs&version=2.0&request=GetFeature&typeNames={}&outputFormat=json&cql_filter=INTERSECTS({},POLYGON(({})))".format(kmiserver,layer["layerid"],layerdefinition(layer)["geometry_property"]["name"],"%2C".join(["{} {}".format(coord[0],coord[1]) for coord in list(geometry.exterior.coords)])),
-                        session_cookies
+                        session_cookies, layer["layerid"]
                     )["features"]
                 else:
                     get_feature_data["failed"] = "Action '{}' Only support Point and Polygon geometry.".format(options["action"])
@@ -825,7 +822,7 @@ def getFeature(feature,kmiserver,session_cookies,options):
                     buff_bbox = Polygon(buffer(geometry.x,geometry.y,buff)).bounds
                     layer_features = retrieveFeatures(
                         "{}/geoserver/wfs?service=wfs&version=2.0&request=GetFeature&typeNames={}&outputFormat=json&bbox={},{},{},{},urn:ogc:def:crs:EPSG:4326".format(kmiserver,layer["layerid"],buff_bbox[1],buff_bbox[0],buff_bbox[3],buff_bbox[2]),
-                        session_cookies
+                        session_cookies, layer["layerid"]
                     )["features"]
 
                     if len(layer_features) == 1:
@@ -880,9 +877,9 @@ def getFeature(feature,kmiserver,session_cookies,options):
 
                     break
 
-    except:
+    except Exception as error:
         traceback.print_exc()
-        get_feature_data["failed"] = "{} from layers ({}) failed.{}".format(options["action"],layers,traceback.format_exception_only(sys.exc_type,sys.exc_value))
+        get_feature_data["failed"] = "{} from layers ({}) failed.{}".format(options["action"],layers,traceback.format_exception_only(type(error),error))
     return get_feature_data
 
 
@@ -900,7 +897,7 @@ def spatial(request):
         else:
             options = {}
 
-        kmiserver = settings.KMI_API_URL
+        kmiserver = None
         cookies = settings.SESSION_COOKIE_NAME
         results = []
 

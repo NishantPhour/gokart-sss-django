@@ -51,6 +51,17 @@ var env = {
     bushfireFireBoundaryLayer:"{{ settings.BUSHFIRE_FIREBOUNDARY_LAYER }}",
     regionLayer:"{{ settings.REGION_LAYER }}",
     districtLayer:"{{ settings.DISTRICT_LAYER }}",
+    legislatedLandsAndWatersLayer:"{{ settings.LEGISLATED_LANDS_AND_WATERS_LAYER }}",
+    stateForestPlantationDistributionLayer:"{{ settings.STATE_FOREST_PLANTATION_DISTRIBUTION_LAYER }}",
+    deptInterestLandsAndWatersLayer:"{{ settings.DEPT_INTEREST_LANDS_AND_WATERS_LAYER }}",
+    otherTenuresLayer:"{{ settings.OTHER_TENURES_LAYER }}",
+    saNtStatePolygonsBurntAreaLayer:"{{ settings.SA_NT_STATE_POLYGONS_BURNTAREA_LAYER }}",
+    plantationAnnualReportLayer:"{{ settings.PLANTATION_ANNUAL_REPORT_LAYER }}",
+    fdGridPointsLayer:"{{ settings.FD_GRID_POINTS_LAYER }}",
+    pilbaraGrid1kmLayer:"{{ settings.PILBARA_GRID_1KM_LAYER }}",
+    fdGridPointsMappingLayer:"{{ settings.FD_GRID_POINTS_MAPPING_LAYER }}",
+    pilbaraGrid10kmMappingLayer:"{{ settings.PILBARA_GRID_10KM_MAPPING_LAYER }}",
+    townsitePointsLayer:"{{ settings.TOWNSITE_POINTS_LAYER }}",
     sssVersion: "{{ settings.VERSION_NO }}",
     
 };
