@@ -78,10 +78,7 @@ FROM builder_base_govapp AS python_libs_govapp
 USER oim
 ENV VIRTUAL_ENV=/app/venv
 RUN python -m venv $VIRTUAL_ENV
-
 ENV PATH=/app/venv/bin:$PATH
-
-
 
 RUN whereis python
 COPY --chown=oim:oim requirements.txt ./
@@ -98,6 +95,7 @@ RUN pip install npm
 
 RUN npm install --loglevel verbose
 RUN npm run build
+RUN npm cache clean --force
 
 # Install the project (ensure that frontend projects have been built prior to this step).
 FROM python_libs_govapp
