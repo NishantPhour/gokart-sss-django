@@ -92,6 +92,7 @@ COPY --chown=oim:oim package.json ./
 COPY --chown=oim:oim profile.py ./
 RUN pip install --upgrade pip
 RUN uv pip install -r requirements.txt
+RUN pip cache purge
 RUN pip install npm
 #\ && rm -rf /var/lib/{apt,dpkg,cache,log}/ /tmp/* /var/tmp/*
 
