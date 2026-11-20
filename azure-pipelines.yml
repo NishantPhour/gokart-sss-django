@@ -53,6 +53,11 @@ stages:
         docker push $(imageName):$(tagDate)-$(shortSha)
       displayName: 'Push Main Image'
 
+    # 4.1 Purge images
+    - script: |
+        docker system prune -af
+      displayName: 'Cleanup Docker space'  
+
     # 5. FIXED: Build Dev Image using native Bash
     - bash: |
         export DOCKER_BUILDKIT=1
