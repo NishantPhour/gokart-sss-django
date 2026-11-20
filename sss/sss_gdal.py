@@ -15,6 +15,7 @@ from urllib.parse import parse_qs, urlsplit
 from sss import s3
 from sss import common
 from sss import kmi
+from sss import api
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files import File
@@ -548,9 +549,9 @@ def loadDatasource(session_cookie,workdir,loadedDatasources,options, request):
             parsed_url = urlsplit(url)
             query = {key.lower(): value for key, value in parse_qs(parsed_url.query).items()}
             layerid = (query.get("typenames") or query.get("typename") or [""])[0].split(",")[0]
-            if kmi.is_kb_layer(layerid):
-                url = kmi.get_kmiserver(layerid=layerid) + "/geoserver/wfs?" + parsed_url.query
-            auth_request = kmi.get_auth(layerid)
+            proxy = api.proxy_object("kb-proxy" if kmi.is_kb_layer(layerid) else "kmi-proxy")
+            url = proxy["proxy_url"] + "/geoserver/wfs?" + parsed_url.query
+            auth_request = HTTPBasicAuth(proxy["username"], proxy["password"]) if proxy["basic_auth_enabled"] else None
             r = requests.get(url,
                 verify=kmi.is_kb_layer(layerid),
                 #cookies=session_cookie
