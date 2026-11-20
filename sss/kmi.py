@@ -4,6 +4,7 @@ import requests
 import sys
 import json
 from django.core.cache import cache
+from sss import api
 
 try:
     import uwsgi
@@ -41,14 +42,14 @@ def _normalise_server(url):
 def get_kmiserver(kmiserver=None, layerid=None):
     """Return the geoserver base url (without '/geoserver') hosting the layer.
     Kaartdijin Boodja layers are served by KB, everything else by KMI."""
-    if is_kb_layer(layerid):
-        return _normalise_server(settings.KB_API_URL)
-    return _normalise_server(settings.KMI_API_URL)
+    proxy = api.proxy_object("kb-proxy" if is_kb_layer(layerid) else "kmi-proxy")
+    return _normalise_server(proxy["proxy_url"])
 
 def get_auth(layerid=None):
-    if is_kb_layer(layerid):
-        return requests.auth.HTTPBasicAuth(settings.KB_AUTH2_BASIC_AUTH_USER,settings.KB_AUTH2_BASIC_AUTH_PASSWORD)
-    return requests.auth.HTTPBasicAuth(settings.KMI_AUTH2_BASIC_AUTH_USER,settings.KMI_AUTH2_BASIC_AUTH_PASSWORD)
+    proxy = api.proxy_object("kb-proxy" if is_kb_layer(layerid) else "kmi-proxy")
+    if not proxy["basic_auth_enabled"]:
+        return None
+    return requests.auth.HTTPBasicAuth(proxy["username"],proxy["password"])
 
 def get_layermetadata(layerids,kmiserver=None,results={}):
     multiple_layers = True
