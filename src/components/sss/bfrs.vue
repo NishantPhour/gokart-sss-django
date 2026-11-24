@@ -632,7 +632,7 @@
       },
       showFireboundary:function(newValue,oldValue) {
         var vm = this
-        this.map.enableDependentLayer(this.bushfireMapLayer,this.env.bushfireFinalFireBoundaryLatestLayer,newValue)
+        // this.map.enableDependentLayer(this.bushfireMapLayer,this.env.bushfireFinalFireBoundaryLatestLayer,newValue)
         $.each(this._featurelist.getArray(),function(index,feature){
             if (vm.isFireboundaryDrawable(feature)) {
                 feature.getGeometry().changed()
@@ -815,7 +815,7 @@
                 cql_filter:"fire_number in ('" + selectedFinalBushfires.map(function(f){return f.get('fire_number')}).join("','") +  "')"
             })
             if (!vm.selectedFinalFireboundaryMapLayer.show) {
-                vm.map.enableDependentLayer(vm.bushfireMapLayer,vm.env.bushfireFinalFireBoundaryLatestLayer + "_selected",true)
+                // vm.map.enableDependentLayer(vm.bushfireMapLayer,vm.env.bushfireFinalFireBoundaryLatestLayer + "_selected",true)
             }
           }
         },wait)
