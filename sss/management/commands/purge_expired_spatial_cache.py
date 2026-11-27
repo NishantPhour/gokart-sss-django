@@ -3,6 +3,7 @@ import requests
 from django import conf
 from django.core.cache import cache
 from sss import models
+from sss import spatial_tile_cache
 import os, errno
 import time
 from django.utils import timezone
@@ -19,6 +20,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         start_time = timezone.now()
+        if conf.settings.SPATIAL_TILE_CACHE_BLOB:
+            spatial_tile_cache.purge_expired_blob_cache()
+            return
         try:
          
             json_files = []

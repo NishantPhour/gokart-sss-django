@@ -267,6 +267,11 @@ TEMP_DIR = decouple.config("TEMP_DIR", default="tmp")
 
 PERTH_TIMEZONE = datetime.datetime.now(pytz.timezone('Australia/Perth')).tzinfo
 SPATIAL_TILE_CACHE_DIR = decouple.config("SPATIAL_TILE_CACHE_DIR", default="./spatial_tile_cache")
+SPATIAL_TILE_CACHE_BLOB = decouple.config("SPATIAL_TILE_CACHE_BLOB", default=False, cast=bool)
+AZURE_STORAGE_CONNECTION_STRING = decouple.config("AZURE_STORAGE_CONNECTION_STRING", default="")
+AZURE_STORAGE_CONTAINER = decouple.config("AZURE_STORAGE_CONTAINER", default="")
+AZURE_STORAGE_USERNAME = decouple.config("AZURE_STORAGE_USERNAME", default="")
+AZURE_STORAGE_ACCOUNT_URL = decouple.config("AZURE_STORAGE_ACCOUNT_URL", default="")
 PRIVATE_MEDIA_DIR_NAME = decouple.config('PRIVATE_MEDIA_DIR_NAME', 'private-media')
 PRIVATE_MEDIA_STORAGE_LOCATION = os.path.join(BASE_DIR, PRIVATE_MEDIA_DIR_NAME)
 PRIVATE_MEDIA_BASE_URL = f'/{PRIVATE_MEDIA_DIR_NAME}/'

@@ -216,7 +216,7 @@ def process_proxy(request, remoteurl, queryString, auth_user, auth_password):
         BROWSER_CACHE_EXPIRY = base64_json.get("browser_cache_expiry", BROWSER_CACHE_EXPIRY)
     
     # FileResponse sets Content-Length; without it, large bodies can be truncated in transit
-    http_response = FileResponse(open(proxy_cache, 'rb'), content_type=base64_json['content_type'], status=base64_json['status_code'])
+    http_response = FileResponse(spatial_tile_cache.open_cache(proxy_cache), content_type=base64_json['content_type'], status=base64_json['status_code'])
 
     http_response.headers['Django-Cache-Expiry'] = str(base64_json['cache_expiry']) + " seconds"
     http_response.headers['Django-Cache-Status'] = CACHE_STATUS
