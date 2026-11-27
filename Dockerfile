@@ -78,10 +78,7 @@ FROM builder_base_govapp AS python_libs_govapp
 USER oim
 ENV VIRTUAL_ENV=/app/venv
 RUN python -m venv $VIRTUAL_ENV
-
 ENV PATH=/app/venv/bin:$PATH
-
-
 
 RUN whereis python
 COPY --chown=oim:oim requirements.txt ./
@@ -92,11 +89,13 @@ COPY --chown=oim:oim package.json ./
 COPY --chown=oim:oim profile.py ./
 RUN pip install --upgrade pip
 RUN uv pip install -r requirements.txt
+RUN pip cache purge
 RUN pip install npm
 #\ && rm -rf /var/lib/{apt,dpkg,cache,log}/ /tmp/* /var/tmp/*
 
 RUN npm install --loglevel verbose
 RUN npm run build
+RUN npm cache clean --force
 
 # Install the project (ensure that frontend projects have been built prior to this step).
 FROM python_libs_govapp
@@ -120,6 +119,11 @@ RUN chmod 777 /app/tmp/
 # RUN /tmp/package_cleanup_2604.sh
 # USER oim
 
+
+USER root
+RUN rm -rf /tmp/*
+RUN apt-get clean
+USER oim
 EXPOSE 8080
 HEALTHCHECK --interval=1m --timeout=5s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/"]
 CMD ["/bin/bash", "-c", "/startup.sh"]
